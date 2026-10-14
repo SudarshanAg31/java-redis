@@ -29,11 +29,25 @@ The project focuses on networking, command processing, data storage, protocol ha
 
 ```text
 java-redis/
-├── src/
-│   ├── main/
-│   │   └── java/
-│   └── test/
-│       └── java/
+├───src
+│   ├───main
+│   │   └───java
+│   │       │   Main.class
+│   │       │   Main.java
+│   │       │   
+│   │       ├───command
+│   │       │       command.java
+│   │       │       echoCommand.java
+│   │       │       getCommand.java
+│   │       │       pingCommand.java
+│   │       │       setCommand.java
+│   │       │       
+│   │       ├───protocol
+│   │       │       resp.java
+│   │       │       respParser.java
+│   │       │       
+│   │       └───store
+│   │               store.java
 ├── your_program.sh
 ├── pom.xml
 └── README.md
