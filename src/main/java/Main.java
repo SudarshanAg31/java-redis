@@ -35,6 +35,11 @@ public class Main {
         if (request == null) {
           break;
         }
+        if (request.isEmpty()) {// *0\r\n...
+        out.write("-ERR empty command\r\n".getBytes());
+        out.flush();
+        continue;
+        } 
         String commandName = request.get(0);
         List<String> commandArgs = request.subList(1, request.size());
         command command;

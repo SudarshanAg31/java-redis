@@ -17,6 +17,9 @@ public class respParser {
             return null;
         }
         int numberOfArguments =Integer.parseInt(firstLine.substring(1));
+        if (numberOfArguments <= 0) {    
+        return null;
+        }
         List<String> arguments =new ArrayList<>();
         for (int i = 0; i < numberOfArguments; i++) {
             String lengthLine = reader.readLine();
