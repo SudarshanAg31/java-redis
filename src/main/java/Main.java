@@ -7,7 +7,9 @@ import java.util.List;
 
 import command.command;
 import command.echoCommand;//server banane ke liye.
+import command.getCommand;
 import command.pingCommand;
+import command.setCommand;
 import protocol.respParser;
 
 public class Main {
@@ -48,7 +50,14 @@ public class Main {
         } 
         else if (commandName.equalsIgnoreCase("ECHO")) {
           command = new echoCommand();
-        } else {
+        } 
+        else if (commandName.equalsIgnoreCase("SET")){
+          command=new setCommand();
+        }
+        else if (commandName.equalsIgnoreCase("GET")){
+          command=new getCommand();
+        }
+        else {
           out.write(("-ERR unknown command\r\n").getBytes());
           out.flush();
           continue;
