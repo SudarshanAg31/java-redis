@@ -16,6 +16,9 @@ public class resp {
         result[result.length - 1] = '\n';
         return result;
     }
+    public static byte[] nullBulkString() {               
+        return "$-1\r\n".getBytes(StandardCharsets.UTF_8);//-1 represent the null string 
+    }
     public static byte[] error(String message) {
         return ("-" + message + "\r\n").getBytes(StandardCharsets.UTF_8);
     }
