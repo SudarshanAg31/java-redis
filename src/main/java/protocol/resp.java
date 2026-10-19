@@ -5,6 +5,9 @@ public class resp {
     public static byte[] simpleString(String value) {
         return ("+" + value + "\r\n").getBytes(StandardCharsets.UTF_8);
     }
+    public static byte[] integer(long value) {
+    return (":" + value + "\r\n").getBytes(StandardCharsets.UTF_8);
+    }
     public static byte[] bulkString(String value) {//foo
         byte[] data = value.getBytes(StandardCharsets.UTF_8);//[102,111,111]
         String header = "$" + data.length + "\r\n";//$3\r\n
