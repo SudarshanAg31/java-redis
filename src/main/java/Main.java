@@ -9,6 +9,7 @@ import command.command;
 import command.echoCommand;//server banane ke liye.
 import command.getCommand;
 import command.pingCommand;
+import command.rpushCommand;
 import command.setCommand;
 import protocol.respParser;
 
@@ -56,6 +57,9 @@ public class Main {
         }
         else if (commandName.equalsIgnoreCase("GET")){
           command=new getCommand();
+        }
+        else if (commandName.equalsIgnoreCase("RPUSH")) {     
+        command = new rpushCommand();
         }
         else {
           out.write(("-ERR unknown command\r\n").getBytes());
