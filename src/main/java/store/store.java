@@ -1,5 +1,7 @@
 package store;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 public class store {
     public static class Entry{
         public final String value;
@@ -14,6 +16,7 @@ public class store {
     }
     //ConcurrentHashMap: is thread safe 
     private static final ConcurrentHashMap<String, Entry> data = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, List<String>> lists = new ConcurrentHashMap<>();
     //normal input with no expiry
     public static void set(String key, String value) {
         data.put(key, new Entry(value,0));
@@ -27,6 +30,16 @@ public class store {
     public static void setWithExpirySec(String key, String value, long ttlSec){
     long expiryTime = System.currentTimeMillis() + ttlSec * 1000L;
     data.put(key, new Entry(value, expiryTime));
+    }
+    public static int rpush(String key, String value) {
+    var list = lists.computeIfAbsent(
+        // Agar list pehle se map mein hai, toh usi existing list ko return karega.
+        // Agar key nahi hai, toh nayi list create karke map mein store karega aur use return karega.
+        key, k -> new CopyOnWriteArrayList<>()
+    );
+
+    list.add(value);
+    return list.size();
     }
     public static String get(String key) {
         Entry entry=data.get(key);
