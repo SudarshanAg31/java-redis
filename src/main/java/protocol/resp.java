@@ -1,12 +1,22 @@
 package protocol;
 
+import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 public class resp {
     public static byte[] simpleString(String value) {
         return ("+" + value + "\r\n").getBytes(StandardCharsets.UTF_8);
     }
     public static byte[] integer(long value) {
     return (":" + value + "\r\n").getBytes(StandardCharsets.UTF_8);
+    }
+    public static byte [] array(List<String> element) {
+        ByteArrayOutputStream out=new ByteArrayOutputStream();
+            out.writeBytes(("*"+element.size()+"\r\n").getBytes(StandardCharsets.UTF_8));
+            for(String elem: element){
+                out.writeBytes(bulkString(elem));
+            }
+        return out.toByteArray();
     }
     public static byte[] bulkString(String value) {//foo
         byte[] data = value.getBytes(StandardCharsets.UTF_8);//[102,111,111]
