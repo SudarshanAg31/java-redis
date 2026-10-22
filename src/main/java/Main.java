@@ -8,6 +8,7 @@ import java.util.List;
 import command.command;
 import command.echoCommand;//server banane ke liye.
 import command.getCommand;
+import command.lrangeCommand;
 import command.pingCommand;
 import command.rpushCommand;
 import command.setCommand;
@@ -60,6 +61,9 @@ public class Main {
         }
         else if (commandName.equalsIgnoreCase("RPUSH")) {     
         command = new rpushCommand();
+        }
+        else if (commandName.equalsIgnoreCase("LRANGE")) {     
+        command = new lrangeCommand();
         }
         else {
           out.write(("-ERR unknown command\r\n").getBytes());
