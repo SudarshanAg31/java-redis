@@ -24,3 +24,4 @@ public class lrangeCommand  implements  command{
         return resp.array(result);
     }
 }
+
