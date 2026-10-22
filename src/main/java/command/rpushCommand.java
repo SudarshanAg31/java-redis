@@ -11,7 +11,7 @@ public class rpushCommand implements command {
             return resp.error("ERR wrong number of arguments for 'rpush' command");
         }
         String key = args.get(0);
-        String value = args.get(1);
+        List<String> value = args.subList(1, args.size());
         int size = store.rpush(key, value);
         return resp.integer(size);
     }
