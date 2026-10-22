@@ -1,4 +1,5 @@
 package store;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -31,15 +32,34 @@ public class store {
     long expiryTime = System.currentTimeMillis() + ttlSec * 1000L;
     data.put(key, new Entry(value, expiryTime));
     }
-    public static int rpush(String key, String value) {
-    var list = lists.computeIfAbsent(
+    public static int rpush(String key, List<String> value) {
+    List<String> list = lists.computeIfAbsent(
         // Agar list pehle se map mein hai, toh usi existing list ko return karega.
         // Agar key nahi hai, toh nayi list create karke map mein store karega aur use return karega.
         key, k -> new CopyOnWriteArrayList<>()
     );
-
-    list.add(value);
+    list.addAll(value);
     return list.size();
+    }
+    public static List<String> lrange(String key,int start,int stop){
+        List<String> list=lists.get(key);
+        if(list==null)return List.of(); //empty 
+        int len=list.size();
+        // Normalize negative indexes
+        if (start < 0) {
+            start = len + start;
+        }
+        if (stop < 0) {
+            stop = len + stop;
+        }
+        // Clamp start to 0 if still negative (out of range negative like -6 on len=5)
+        if (start < 0) {
+            start = 0;
+        }
+        if(start>=len) return List.of();
+        if(start>stop)return List.of();
+        if(stop>=len) stop=len-1;
+        return new ArrayList<>(list.subList(start, stop+1));
     }
     public static String get(String key) {
         Entry entry=data.get(key);
