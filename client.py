@@ -199,6 +199,48 @@ def main():
     send(sock, "LLEN")                     # error (no key)
     send(sock, "LLEN", "key1", "key2")     # error (too many args)
     
+    # ---------- LPOP ----------
+    send(sock, "RPUSH", "lpop_list", "one", "two", "three", "four", "five")
+    # Expected: (INTEGER, 5)
+
+    send(sock, "LPOP", "lpop_list")
+    # Expected: (BULK, "one")
+
+    send(sock, "LRANGE", "lpop_list", "0", "-1")
+    # Expected: ["two", "three", "four", "five"]
+
+    send(sock, "LPOP", "lpop_list")
+    # Expected: (BULK, "two")
+
+    send(sock, "LPOP", "lpop_list")
+    # Expected: (BULK, "three")
+
+    send(sock, "LLEN", "lpop_list")
+    # Expected: (INTEGER, 2)
+
+    send(sock, "LPOP", "lpop_list")
+    # Expected: (BULK, "four")
+
+    send(sock, "LPOP", "lpop_list")
+    # Expected: (BULK, "five")
+
+    send(sock, "LPOP", "lpop_list")
+    # Expected: (NULL, None)          ← empty now
+
+    send(sock, "LLEN", "lpop_list")
+    # Expected: (INTEGER, 0)
+
+    # Missing list
+    send(sock, "LPOP", "never_existed")
+    # Expected: (NULL, None)
+
+    # Errors
+    send(sock, "LPOP")
+    # Expected: error
+
+    send(sock, "LPOP", "key1", "key2")
+    # Expected: error
+    
     sock.close()
 
 
