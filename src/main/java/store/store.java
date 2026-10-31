@@ -1,5 +1,6 @@
 package store;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -40,6 +41,13 @@ public class store {
     );
     list.addAll(value);
     return list.size();
+    }
+    public static int lpush(String key,List<String>values){
+        List<String>list=lists.computeIfAbsent(key,k-> new CopyOnWriteArrayList<>());
+        List<String>reverse=new ArrayList<>(values);
+        Collections.reverse(reverse);
+        list.addAll(0,reverse);
+        return list.size();
     }
     public static List<String> lrange(String key,int start,int stop){
         List<String> list=lists.get(key);
