@@ -76,6 +76,18 @@ public class store {
         }
         return list.size();
     }
+    public static String lpop(String key){
+        List<String>list=lists.get(key);
+        if(list==null){
+            return null;
+        }
+        synchronized (list) {
+            if(list.isEmpty()){
+                return null;
+            }
+            return list.remove(0);
+        }
+    }
     public static String get(String key) {
         Entry entry=data.get(key);
         if(entry==null){
