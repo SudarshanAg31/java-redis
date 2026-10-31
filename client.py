@@ -179,6 +179,26 @@ def main():
     # Errors
     send(sock, "LPUSH", "key")          # error (no values)
     send(sock, "LPUSH")                  # error (no args)
+    # ---------- LLEN ----------
+    send(sock, "RPUSH", "llen_list", "a", "b", "c", "d")
+    # Expected: (INTEGER, 4)
+
+    send(sock, "LLEN", "llen_list")
+    # Expected: (INTEGER, 4)
+
+    send(sock, "LPUSH", "llen_list", "x")
+    # Expected: (INTEGER, 5)
+
+    send(sock, "LLEN", "llen_list")
+    # Expected: (INTEGER, 5)
+
+    send(sock, "LLEN", "missing_list")
+    # Expected: (INTEGER, 0)
+
+    # Errors
+    send(sock, "LLEN")                     # error (no key)
+    send(sock, "LLEN", "key1", "key2")     # error (too many args)
+    
     sock.close()
 
 
