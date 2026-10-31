@@ -149,7 +149,36 @@ def main():
     # Mixed
     send(sock, "LRANGE", "neg_list", "-100", "100") # → [a, b, c, d, e]
     send(sock, "LRANGE", "neg_list", "-3", "-2")    # → [c, d]
+    # ---------- LPUSH ----------
+    send(sock, "LPUSH", "lpush_list", "c")
+    # Expected: (INTEGER, 1)
 
+    send(sock, "LPUSH", "lpush_list", "b", "a")
+    # Expected: (INTEGER, 3)
+
+    send(sock, "LRANGE", "lpush_list", "0", "-1")
+    # Expected: [a, b, c]
+
+    # Fresh list with multiple
+    send(sock, "LPUSH", "lpush2", "x", "y", "z")
+    # Expected: (INTEGER, 3)
+
+    send(sock, "LRANGE", "lpush2", "0", "-1")
+    # Expected: [z, y, x]   (reversed!)
+
+    # Mix LPUSH and RPUSH
+    send(sock, "LPUSH", "mixed", "b")
+    send(sock, "LPUSH", "mixed", "a")
+    send(sock, "RPUSH", "mixed", "c")
+    send(sock, "RPUSH", "mixed", "d")
+    # List is now [a, b, c, d]
+
+    send(sock, "LRANGE", "mixed", "0", "-1")
+    # Expected: [a, b, c, d]
+
+    # Errors
+    send(sock, "LPUSH", "key")          # error (no values)
+    send(sock, "LPUSH")                  # error (no args)
     sock.close()
 
 
