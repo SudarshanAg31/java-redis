@@ -69,6 +69,13 @@ public class store {
         if(stop>=len) stop=len-1;
         return new ArrayList<>(list.subList(start, stop+1));
     }
+    public static int llen(String key){
+        List<String> list=lists.get(key);
+        if(list==null){
+            return 0;
+        }
+        return list.size();
+    }
     public static String get(String key) {
         Entry entry=data.get(key);
         if(entry==null){
