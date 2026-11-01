@@ -88,6 +88,21 @@ public class store {
             return list.remove(0);
         }
     }
+    public static List<String>lpop(String key,int count){
+        List<String>list=lists.get(key);
+        if(list==null){
+            return List.of();
+        }
+        synchronized (list) {
+            int n=Math.min(list.size(),count);
+            if(n==0){
+                return List.of();
+            }
+            List<String>removed=new ArrayList<>(list.subList(0,n));
+            list.subList(0, n).clear();
+            return removed;
+        }
+    } 
     public static String get(String key) {
         Entry entry=data.get(key);
         if(entry==null){
