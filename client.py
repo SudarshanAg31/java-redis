@@ -240,6 +240,52 @@ def main():
 
     send(sock, "LPOP", "key1", "key2")
     # Expected: error
+    # ---------- LPOP with count ----------
+    send(sock, "RPUSH", "pop_list", "one", "two", "three", "four", "five")
+    # Expected: (INTEGER, 5)
+
+    send(sock, "LPOP", "pop_list", "2")
+    # Expected: (ARRAY, [one, two])
+
+    send(sock, "LRANGE", "pop_list", "0", "-1")
+    # Expected: [three, four, five]
+
+    send(sock, "LPOP", "pop_list", "1")
+    # Expected: (ARRAY, [three])
+
+    send(sock, "LRANGE", "pop_list", "0", "-1")
+    # Expected: [four, five]
+
+    # Count > length
+    send(sock, "LPOP", "pop_list", "100")
+    # Expected: (ARRAY, [four, five])
+
+    send(sock, "LRANGE", "pop_list", "0", "-1")
+    # Expected: []   (empty)
+
+    # Missing list with count
+    send(sock, "LPOP", "missing_with_count", "5")
+    # Expected: (ARRAY, [])
+
+    # Count = 0
+    send(sock, "RPUSH", "zero_list", "a", "b")
+    send(sock, "LPOP", "zero_list", "0")
+    # Expected: (ARRAY, [])
+    send(sock, "LRANGE", "zero_list", "0", "-1")
+    # Expected: [a, b]   (unchanged)
+
+    # Errors
+    send(sock, "LPOP", "list", "-1")
+    # Expected: error (negative)
+
+    send(sock, "LPOP", "list", "abc")
+    # Expected: error (not integer)
+
+    send(sock, "LPOP")
+    # Expected: error (no args)
+
+    send(sock, "LPOP", "k", "2", "extra")
+    # Expected: error (too many args)
     
     sock.close()
 
