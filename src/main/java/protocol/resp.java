@@ -29,6 +29,9 @@ public class resp {
         result[result.length - 1] = '\n';//[36,51,13,10,102,111,111,13,10]
         return result;
     }
+    public static byte[] nullArray() {
+    return "*-1\r\n".getBytes(StandardCharsets.UTF_8);
+    }
     public static byte[] nullBulkString() {               
         return "$-1\r\n".getBytes(StandardCharsets.UTF_8);//-1 represent the null string 
     }
