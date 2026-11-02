@@ -5,6 +5,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.List;
 
+import command.blpopCommand;
 import command.command;
 import command.echoCommand;//server banane ke liye.
 import command.getCommand;
@@ -76,6 +77,9 @@ public class Main {
         }
         else if(commandName.equalsIgnoreCase("LPOP")){
           command=new lpopCommand();
+        }
+        else if (commandName.equalsIgnoreCase("BLPOP")) {
+          command = new blpopCommand();
         }
         else {
           out.write(("-ERR unknown command\r\n").getBytes());
