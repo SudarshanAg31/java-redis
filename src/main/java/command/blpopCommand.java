@@ -1,6 +1,7 @@
 package command;
 
 import java.util.List;
+
 import protocol.resp;
 import store.store;
 
@@ -13,9 +14,9 @@ public class blpopCommand implements command {
         }
 
         String key = args.get(0);
-        long timeout;
+        double timeout;
         try {
-            timeout = Long.parseLong(args.get(1));
+            timeout = Double.parseDouble(args.get(1));
         } catch (NumberFormatException e) {
             return resp.error("ERR timeout is not an integer or out of range");
         }
