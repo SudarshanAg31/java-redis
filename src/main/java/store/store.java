@@ -117,11 +117,11 @@ public class store {
         // signal() → Waiting thread ko wake karta hai ⚡
         final Deque<Waiter> waiters = new ArrayDeque<>();//FIFO queue — kaun kaun wait kar raha hai, order me
     }
-        public static String[] blpop(String key, long timeoutSec) {
+        public static String[] blpop(String key, double timeoutSec) {
         ListLock ll = getBlpopLock(key);
         ll.lock.lock();
         try {
-            long deadline = timeoutSec == 0 ? 0 : System.currentTimeMillis() + timeoutSec * 1000L;
+            long deadline = timeoutSec <= 0 ? 0 : System.currentTimeMillis() + (long)timeoutSec * 1000L;
             Waiter me = new Waiter(deadline);
             ll.waiters.addLast(me);
 
