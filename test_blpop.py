@@ -113,3 +113,53 @@ s.close()
 time.sleep(1)
 print("Results:", results)
 print("Expected: C1 got [blist, foo], C2 got [blist, bar], C3 still waiting")
+
+def blpop_client(name, key, timeout, results):
+    sock = socket.create_connection(("127.0.0.1", 6379))
+    req = encode_resp("BLPOP", key, str(timeout))
+    sock.sendall(req)
+    print(f"[{name}] BLPOP {key} {timeout} sent, waiting...")
+    start = time.time()
+    resp = read_resp(sock)
+    elapsed = time.time() - start
+    print(f"[{name}] Got after {elapsed:.3f}s: {resp}")
+    results[name] = (resp, elapsed)
+    sock.close()
+
+# Clean up
+def flush():
+    s = socket.create_connection(("127.0.0.1", 6379))
+    s.sendall(encode_resp("LPOP", "blist", "100"))
+    read_resp(s)
+    s.close()
+
+
+# ---- Test 1: Timeout 0.1 (100ms), no push ----
+flush()
+print("\n=== Test 1: 0.1s timeout, no push ===")
+t = threading.Thread(target=blpop_client, args=("C1", "blist", 0.1, {}))
+t.start()
+t.join(timeout=2)
+
+# ---- Test 2: Timeout 0.5s, push at 100ms ----
+flush()
+print("\n=== Test 2: 0.5s timeout, push at 100ms ===")
+results = {}
+t = threading.Thread(target=blpop_client, args=("C2", "blist", 0.5, results))
+t.start()
+time.sleep(0.1)
+
+s = socket.create_connection(("127.0.0.1", 6379))
+s.sendall(encode_resp("RPUSH", "blist", "foo"))
+print("[Pusher] RPUSH →", read_resp(s))
+s.close()
+
+t.join(timeout=2)
+print("Result:", results.get("C2"))
+
+# ---- Test 3: Timeout 1s (integer format still works) ----
+flush()
+print("\n=== Test 3: 1s timeout ===")
+t = threading.Thread(target=blpop_client, args=("C3", "blist", 1, {}))
+t.start()
+t.join(timeout=3)
