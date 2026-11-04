@@ -16,6 +16,8 @@ import command.lrangeCommand;
 import command.pingCommand;
 import command.rpushCommand;
 import command.setCommand;
+import command.typeCommand;
+import command.xaddCommand;
 import protocol.respParser;
 
 public class Main {
@@ -80,6 +82,12 @@ public class Main {
         }
         else if (commandName.equalsIgnoreCase("BLPOP")) {
           command = new blpopCommand();
+        }
+        else if (commandName.equalsIgnoreCase("TYPE")) {
+          command = new typeCommand();
+        }
+        else if (commandName.equalsIgnoreCase("XADD")) {
+          command = new xaddCommand();
         }
         else {
           out.write(("-ERR unknown command\r\n").getBytes());
