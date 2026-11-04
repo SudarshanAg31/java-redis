@@ -287,8 +287,78 @@ def main():
     send(sock, "LPOP", "k", "2", "extra")
     # Expected: error (too many args)
     
-    sock.close()
+    # ---------- TYPE ----------
+    send(sock, "SET", "type_test", "hello")
+    # +OK
 
+    send(sock, "TYPE", "type_test")
+    # ("SIMPLE", "string")
+
+    send(sock, "TYPE", "missing")
+    # ("SIMPLE", "none")
+
+    send(sock, "RPUSH", "type_list", "a", "b")
+    # :2
+
+    send(sock, "TYPE", "type_list")
+    # ("SIMPLE", "list")
+
+    # Expired key
+    send(sock, "SET", "type_exp", "x", "PX", "100")
+    send(sock, "TYPE", "type_exp")
+    # ("SIMPLE", "string")   — still valid
+
+    time.sleep(0.2)
+    send(sock, "TYPE", "type_exp")
+    # ("SIMPLE", "none")     — expired
+
+    # Errors
+    send(sock, "TYPE")
+    # ERROR
+
+    send(sock, "TYPE", "k1", "k2")
+    # ERROR
+    
+    # ---------- XADD / TYPE ----------
+
+    # Create stream
+    send(sock, "XADD", "stream_key", "0-1", "foo", "bar")
+    # Expected: (BULK, "0-1")
+
+    send(sock, "TYPE", "stream_key")
+    # Expected: (SIMPLE, "stream")
+
+    # Multiple entries
+    send(sock, "XADD", "stream_key", "0-2", "temp", "36", "humidity", "95")
+    # Expected: (BULK, "0-2")
+
+    send(sock, "XADD", "stream_key", "0-3", "x", "y")
+    # Expected: (BULK, "0-3")
+
+    send(sock, "TYPE", "stream_key")
+    # Expected: (SIMPLE, "stream")
+
+    # Long ID
+    send(sock, "XADD", "other_stream", "1526919030474-0", "temperature", "36")
+    # Expected: (BULK, "1526919030474-0")
+
+    send(sock, "TYPE", "other_stream")
+    # Expected: (SIMPLE, "stream")
+
+    # Errors
+    send(sock, "XADD", "stream", "0-4", "field")
+    # Expected: error (odd number of fields)
+
+    send(sock, "XADD", "stream", "0-4")
+    # Expected: error (too few args)
+
+    send(sock, "XADD", "stream")
+    # Expected: error
+
+    send(sock, "XADD")
+    # Expected: error
+    
+    sock.close()
 
 if __name__ == "__main__":
     main()
