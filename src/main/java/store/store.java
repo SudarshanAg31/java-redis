@@ -24,8 +24,36 @@ public class store {
             return expiryTime>0 && System.currentTimeMillis()>expiryTime;
         }
     }
+    
+    static class Waiter {
+        final long deadline;
+        Waiter(long deadline) { this.deadline = deadline; }
+    }
+    
+    public static class ListLock {
+        final ReentrantLock lock = new ReentrantLock();//list me ek he time koi add ya delete ker sakta hai bake block 
+        final Condition condition = lock.newCondition();//jo block hai un ko a weak ker ta hai aur signal deta hai
+       //  await()  → Thread ko wait karata hai 😴
+        // signal() → Waiting thread ko wake karta hai ⚡
+        final Deque<Waiter> waiters = new ArrayDeque<>();//FIFO queue — kaun kaun wait kar raha hai, order me
+    }
+    
+    public static class StreamEntry{
+        public final String id ;
+        public final List<String> fields;
+        public StreamEntry(String id,List<String>fields){
+            this.id=id;
+            this.fields=fields;
+        }
+    }
+
+    public static class Stream{
+        public final List<StreamEntry> entries = new ArrayList<>();
+    }
+    
     // store.java — BLPOP support
     //ConcurrentHashMap: is thread safe 
+    private static final ConcurrentHashMap<String ,Stream>streams=new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, ListLock> blpopLocks = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Entry> data = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, List<String>> lists = new ConcurrentHashMap<>();
@@ -105,19 +133,8 @@ public class store {
             ll.lock.unlock();
         }
     }
- 
-    static class Waiter {
-        final long deadline;
-        Waiter(long deadline) { this.deadline = deadline; }
-    }
-    public static class ListLock {
-        final ReentrantLock lock = new ReentrantLock();//list me ek he time koi add ya delete ker sakta hai bake block 
-        final Condition condition = lock.newCondition();//jo block hai un ko a weak ker ta hai aur signal deta hai
-       //  await()  → Thread ko wait karata hai 😴
-        // signal() → Waiting thread ko wake karta hai ⚡
-        final Deque<Waiter> waiters = new ArrayDeque<>();//FIFO queue — kaun kaun wait kar raha hai, order me
-    }
-        public static String[] blpop(String key, double timeoutSec) {
+
+    public static String[] blpop(String key, double timeoutSec) {
         ListLock ll = getBlpopLock(key);
         ll.lock.lock();
         try {
@@ -220,4 +237,38 @@ public class store {
         }
         return entry.value;  
     }
+
+    public static String type(String key){
+        if(data.containsKey(key)){
+            Entry e=data.get(key);
+            if(e==null){
+            // race — ignore, treat as missing
+            }
+            else if(e.isExpired()){
+                data.remove(key);
+            }
+            else return "string";
+        }
+        if(lists.containsKey(key)){
+            return "list";
+        }
+        else if(streams.contains(key)){
+            return "stream";
+        }
+        return "none";
+    } 
+
+    public static String xadd(String key,String id,List<String> fields){
+        ListLock ll=getBlpopLock(key);
+        ll.lock.lock();
+        try {
+            Stream stream=streams.computeIfAbsent(key,k->new Stream());
+            StreamEntry entry=new StreamEntry(id,new ArrayList<>(fields));
+            stream.entries.add(entry);
+            return id;
+        } finally {
+            ll.lock.unlock();
+        }
+    }
+
 }
