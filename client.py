@@ -408,7 +408,33 @@ def main():
     # Test 12: Invalid format
     send(sock, "XADD", "s3", "abc-*", "a", "b")
     # Expected: error "Invalid stream ID"
-        
+
+    # Test 1: Empty stream, auto ID
+    send(sock, "XADD", "stream1", "*", "foo", "bar")
+    # Expected: bulk string like "1735000000000-0"
+    # Can't check exact value (time-dependent), but should end with "-0"
+
+    # Test 2: Another auto ID (later)
+    time.sleep(0.002)   # 2ms
+    send(sock, "XADD", "stream1", "*", "bar", "baz")
+    # Expected: bulk string ending with "-0", time larger
+
+    # Test 3: Mixed — auto, then explicit, then auto
+    send(sock, "XADD", "stream2", "*", "a", "b")       # auto
+    send(sock, "XADD", "stream2", "9999999999999-0", "c", "d")  # explicit future
+    send(sock, "XADD", "stream2", "*", "e", "f")       # auto — clock skew
+    # Expected: "9999999999999-1"  (because now < 9999999999999)
+
+    # Test 4: Auto after 5-* (previous stage)
+    send(sock, "XADD", "stream3", "5-*", "x", "y")     # → "5-0"
+    send(sock, "XADD", "stream3", "*", "a", "b")       # → now-0 (now >> 5)
+    # Expected: "now-0" (current time)
+
+    # Test 5: Auto after 5-5
+    send(sock, "XADD", "stream3", "5-5", "c", "d")     # → "5-5"
+    send(sock, "XADD", "stream3", "*", "e", "f")       # → now-0
+    # Expected: "now-0"
+            
     sock.close()
 
 if __name__ == "__main__":
