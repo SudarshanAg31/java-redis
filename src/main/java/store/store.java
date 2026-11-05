@@ -18,6 +18,9 @@ import store.store.XaddError;
 public class store {
 
     private static StreamId resolveId(String strid, Stream stream) {
+        if(strid.startsWith("*")){
+            return autoGenerateId(stream);
+        }
         if(strid.endsWith("-*")){
             String timeStr=strid.substring(0,strid.length()-2);
             long time;
@@ -56,6 +59,26 @@ public class store {
         catch (IllegalArgumentException e) {
             throw new XaddError("ERR Invalid stream ID specified as stream command argument");
         }
+    }
+
+    private static StreamId autoGenerateId(Stream stream) {
+        long now=System.currentTimeMillis();
+        if(stream.entries.isEmpty()){
+            return new StreamId(now, 0);
+        }
+        StreamId last=stream.entries.get(stream.entries.size()-1).id;
+        if(now>last.time){
+            return new StreamId(now, 0);
+        }
+        if(now== last.time){
+            return new StreamId(now, last.seq+1);
+        }
+        // now < last.time (clock skew)
+        // use last.time, increment seq
+        if(last.seq==Long.MAX_VALUE){
+            return new StreamId(last.time+1, 0);
+        }
+        return new StreamId(last.time, last.seq+1);
     }
     public static class Entry{
         public final String value;
@@ -335,13 +358,6 @@ public class store {
     } 
 
     public static String xadd(String key,String strid,List<String> fields){
-        // StreamId newId;
-        // try {
-        //     newId=StreamId.parse(strid);
-        // } 
-        // catch (IllegalArgumentException e) {
-        //     return null;
-        // }
         ListLock ll=getBlpopLock(key);
         ll.lock.lock();
         try {
