@@ -14,7 +14,49 @@ import store.store.ListLock;
 import store.store.StreamEntry;
 import store.store.StreamId;
 import store.store.Waiter;
+import store.store.XaddError;
 public class store {
+
+    private static StreamId resolveId(String strid, Stream stream) {
+        if(strid.endsWith("-*")){
+            String timeStr=strid.substring(0,strid.length()-2);
+            long time;
+            try {
+                time=Long.parseLong(timeStr);
+            }
+            catch (NumberFormatException e) {
+            throw new XaddError("ERR Invalid stream ID specified as stream command argument");
+            }
+            long seq;
+            if(stream.entries.isEmpty()){
+                seq=(time==0)?1:0;
+            } 
+            else{
+                StreamId last=stream.entries.get(stream.entries.size()-1).id;
+                if(time<last.time){
+                    // Can't go backwards
+                    throw new XaddError("ERR The ID specified in XADD is equal or smaller than the target stream top item");
+                }
+                else if(time==last.time){
+                    // Same time — increment seq
+                    seq=last.seq+1;
+                }
+                else{
+                    // New time > last time
+                    seq=(time==0)?1:0;
+                }
+            }
+            return new StreamId(time, seq);
+        }
+        // Explicit Id
+        try {
+            return StreamId.parse(strid);
+        } 
+        
+        catch (IllegalArgumentException e) {
+            throw new XaddError("ERR Invalid stream ID specified as stream command argument");
+        }
+    }
     public static class Entry{
         public final String value;
         public final long expiryTime;
@@ -258,7 +300,7 @@ public class store {
     } finally {
         ll.lock.unlock();
     }
-}
+    }
     
     public static String get(String key) {
         Entry entry=data.get(key);
@@ -293,17 +335,18 @@ public class store {
     } 
 
     public static String xadd(String key,String strid,List<String> fields){
-        StreamId newId;
-        try {
-            newId=StreamId.parse(strid);
-        } 
-        catch (IllegalArgumentException e) {
-            return null;
-        }
+        // StreamId newId;
+        // try {
+        //     newId=StreamId.parse(strid);
+        // } 
+        // catch (IllegalArgumentException e) {
+        //     return null;
+        // }
         ListLock ll=getBlpopLock(key);
         ll.lock.lock();
         try {
             Stream stream=streams.computeIfAbsent(key,k->new Stream());
+            StreamId newId=resolveId(strid,stream);
             // Rule 1: ID must be > 0-0
             if(newId.compareTo(new StreamId(0, 0))<=0){
                 return "ERR The ID specified in XADD must be greater than 0-0";
