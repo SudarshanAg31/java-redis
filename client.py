@@ -358,6 +358,57 @@ def main():
     send(sock, "XADD")
     # Expected: error
     
+    # Setup
+    # (ensure stream doesn't exist — flush or use new key)
+
+    # Test 1: Empty stream, time=0
+    send(sock, "XADD", "s1", "0-*", "foo", "bar")
+    # Expected: (BULK, "0-1")
+
+    # Test 2: Empty stream, time=5
+    send(sock, "XADD", "s2", "5-*", "foo", "bar")
+    # Expected: (BULK, "5-0")
+
+    # Test 3: Same time, increment seq
+    send(sock, "XADD", "s2", "5-*", "bar", "baz")
+    # Expected: (BULK, "5-1")
+
+    # Test 4: Again
+    send(sock, "XADD", "s2", "5-*", "x", "y")
+    # Expected: (BULK, "5-2")
+
+    # Test 5: New bigger time
+    send(sock, "XADD", "s2", "10-*", "a", "b")
+    # Expected: (BULK, "10-0")
+
+    # Test 6: Invalid — smaller time
+    send(sock, "XADD", "s2", "3-*", "c", "d")
+    # Expected: error "equal or smaller"
+
+    # Test 7: Same time as last, seq +1
+    send(sock, "XADD", "s2", "10-*", "e", "f")
+    # Expected: (BULK, "10-1")
+
+    # Test 8: Explicit ID still works
+    send(sock, "XADD", "s2", "15-5", "g", "h")
+    # Expected: (BULK, "15-5")
+
+    # Test 9: Auto-seq after explicit
+    send(sock, "XADD", "s2", "15-*", "i", "j")
+    # Expected: (BULK, "15-6")  (last time=15, seq=5, next=6)
+
+    # Test 10: time=0 after 0-1
+    send(sock, "XADD", "s1", "0-*", "a", "b")
+    # Expected: (BULK, "0-2")  (last 0-1, next 0-2)
+
+    # Test 11: Odd fields still error
+    send(sock, "XADD", "s3", "1-*", "field")
+    # Expected: error
+
+    # Test 12: Invalid format
+    send(sock, "XADD", "s3", "abc-*", "a", "b")
+    # Expected: error "Invalid stream ID"
+        
     sock.close()
 
 if __name__ == "__main__":
