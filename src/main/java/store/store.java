@@ -11,6 +11,8 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 import store.store.ListLock;
+import store.store.StreamEntry;
+import store.store.StreamId;
 import store.store.Waiter;
 public class store {
     public static class Entry{
@@ -39,9 +41,9 @@ public class store {
     }
     
     public static class StreamEntry{
-        public final String id ;
+        public final StreamId id ;
         public final List<String> fields;
-        public StreamEntry(String id,List<String>fields){
+        public StreamEntry(StreamId id,List<String>fields){
             this.id=id;
             this.fields=fields;
         }
@@ -51,6 +53,38 @@ public class store {
         public final List<StreamEntry> entries = new ArrayList<>();
     }
     
+    public static class StreamId implements Comparable<StreamId>{
+        public final long time;
+        public final long seq;
+        public StreamId(long time,long seq){
+            this.time=time;
+            this.seq=seq;
+        }
+
+        public static StreamId parse(String s) {
+            int dash=s.indexOf('-');
+            if(dash==-1){
+                throw new IllegalArgumentException("Invalid ID format: " +s);
+            }
+            long time=Long.parseLong(s.substring(0,dash));
+            long seq=Long.parseLong(s.substring(dash+1));
+            return new StreamId(time,seq);
+        }
+        @Override
+        public int compareTo(StreamId o) {
+            int c=Long.compare(this.time,o.time);
+            if(c!=0)return c;
+            return Long.compare(this.seq, o.seq);
+        }
+        @Override 
+        public String toString(){
+            return time+"-"+seq;
+        }
+    }
+    
+    public static class XaddError extends RuntimeException {
+    public XaddError(String message) { super(message); }
+    }
     // store.java — BLPOP support
     //ConcurrentHashMap: is thread safe 
     private static final ConcurrentHashMap<String ,Stream>streams=new ConcurrentHashMap<>();
@@ -258,14 +292,32 @@ public class store {
         return "none";
     } 
 
-    public static String xadd(String key,String id,List<String> fields){
+    public static String xadd(String key,String strid,List<String> fields){
+        StreamId newId;
+        try {
+            newId=StreamId.parse(strid);
+        } 
+        catch (IllegalArgumentException e) {
+            return null;
+        }
         ListLock ll=getBlpopLock(key);
         ll.lock.lock();
         try {
             Stream stream=streams.computeIfAbsent(key,k->new Stream());
-            StreamEntry entry=new StreamEntry(id,new ArrayList<>(fields));
+            // Rule 1: ID must be > 0-0
+            if(newId.compareTo(new StreamId(0, 0))<=0){
+                return "ERR The ID specified in XADD must be greater than 0-0";
+            }
+            // Rule 2: ID must be > last entry's ID (if any)
+            if (!stream.entries.isEmpty()) {
+                StreamId lastId = stream.entries.get(stream.entries.size() - 1).id;
+                if (newId.compareTo(lastId) <= 0) {
+                    return "ERR The ID specified in XADD is equal or smaller than the target stream top item";
+                }
+            }
+            StreamEntry entry=new StreamEntry(newId,new ArrayList<>(fields));
             stream.entries.add(entry);
-            return id;
+            return newId.toString();
         } finally {
             ll.lock.unlock();
         }
