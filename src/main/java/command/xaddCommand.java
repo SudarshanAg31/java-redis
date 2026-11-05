@@ -17,7 +17,11 @@ public class xaddCommand implements command{
         if(fields.size()%2!=0){
             return resp.error("ERR wrong number of argument for 'xadd' command");
         }
-        String resultId=store.xadd(key, id, fields);
-        return resp.bulkString(resultId);
+        try {
+            String resultId=store.xadd(key, id, fields);
+            return resp.bulkString(resultId);
+        } catch (store.XaddError e) {
+            return resp.error(e.getMessage());
+        }
     }
 }
