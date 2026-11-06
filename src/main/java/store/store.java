@@ -211,7 +211,7 @@ public class store {
         ll.lock.lock();
         try {
             List<String> list=lists.get(key);
-            if(list==null)return List.of(); //empty 
+            if(list==null)return new ArrayList<>(); //empty 
             int len=list.size();
             // Normalize negative indexes
             if (start < 0) {
@@ -224,8 +224,8 @@ public class store {
             if (start < 0) {
                 start = 0;
             }
-            if(start>=len) return List.of();
-            if(start>stop)return List.of();
+            if(start>=len) return new ArrayList<>();
+            if(start>stop)return new ArrayList<>();
             if(stop>=len) stop=len-1;
             return new ArrayList<>(list.subList(start, stop+1));
         } finally{ 
@@ -307,11 +307,11 @@ public class store {
     try {
         List<String> list = lists.get(key);
         if (list == null) {
-            return List.of();
+            return new ArrayList<>();
         }
         int n = Math.min(list.size(), count);
         if (n == 0) {
-            return List.of();
+            return new ArrayList<>();
         }
         List<String> removed = new ArrayList<>(list.subList(0, n));
         list.subList(0, n).clear();
@@ -381,5 +381,28 @@ public class store {
             ll.lock.unlock();
         }
     }
-
+    public static List<List<Object>> xrange(String key, StreamId start,StreamId end) {
+        ListLock ll=getBlpopLock(key);
+        ll.lock.lock();
+        try {
+            Stream stream=streams.get(key);
+            if(stream==null){
+                return new ArrayList<>();
+            }
+            List<List<Object>> result=new ArrayList<>();
+            for(StreamEntry entry: stream.entries){
+                if(entry.id.compareTo(start)>=0&& entry.id.compareTo(end)<=0){
+                    //Entry in range
+                    List<Object> item=new ArrayList<>();
+                    item.add(entry.id.toString());
+                    item.add(entry.fields);
+                    result.add(item);
+                }
+            }
+            return result;
+        }
+        finally{
+            ll.lock.unlock();
+        }
+    }
 }
