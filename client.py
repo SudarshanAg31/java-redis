@@ -472,6 +472,72 @@ def main():
     send(sock, "XRANGE", "xr_stream", "0-1")           # no end
     send(sock, "XRANGE", "xr_stream", "abc", "0-1")    # invalid start
     send(sock, "XRANGE", "xr_stream", "0-1", "abc")    # invalid end
+        # Setup
+    send(sock, "XADD", "xr", "0-1", "foo", "bar")
+    send(sock, "XADD", "xr", "0-2", "bar", "baz")
+    send(sock, "XADD", "xr", "0-3", "baz", "foo")
+
+    # From start to 0-2
+    send(sock, "XRANGE", "xr", "-", "0-2")
+    # Expected: [[0-1, ...], [0-2, ...]]
+
+    # From start to end
+    send(sock, "XRANGE", "xr", "-", "0-3")
+    # Expected: all 3 entries
+
+    # From start to 0-1
+    send(sock, "XRANGE", "xr", "-", "0-1")
+    # Expected: [[0-1, ...]]
+
+    # From start to missing
+    send(sock, "XRANGE", "xr", "-", "0")
+    # Expected: all 3 entries (end "0" → (0, MAX))
+
+    # Empty stream
+    send(sock, "XRANGE", "missing", "-", "0-5")
+    # Expected: []
+
+    # From start, exact single entry
+    send(sock, "XRANGE", "xr", "-", "0-1")
+    # Expected: [[0-1, ["foo", "bar"]]]
+    # Setup
+        
+    send(sock, "XADD", "xr", "0-1", "foo", "bar")
+    send(sock, "XADD", "xr", "0-2", "bar", "baz")
+    send(sock, "XADD", "xr", "0-3", "baz", "foo")
+
+    # From 0-2 to end
+    send(sock, "XRANGE", "xr", "0-2", "+")
+    # Expected: [[0-2, ...], [0-3, ...]]
+
+    # From 0-1 to end
+    send(sock, "XRANGE", "xr", "0-1", "+")
+    # Expected: all 3 entries
+
+    # From start to end (full stream)
+    send(sock, "XRANGE", "xr", "-", "+")
+    # Expected: all 3 entries
+
+    # From start to start (single entry via + end but start = end)
+    send(sock, "XRANGE", "xr", "0-2", "+")
+    # Expected: [[0-2, ...], [0-3, ...]]
+
+    # From after end (no results)
+    send(sock, "XRANGE", "xr", "5-0", "+")
+    # Expected: []
+
+    # Missing stream
+    send(sock, "XRANGE", "missing", "0-0", "+")
+    # Expected: []
+
+    # Full stream, missing
+    send(sock, "XRANGE", "missing", "-", "+")
+    # Expected: []
+
+    # Partial start with + end
+    send(sock, "XRANGE", "xr", "0", "+")
+    # Expected: all 3 entries (start "0" → (0, 0))
+    
     sock.close()
 
 if __name__ == "__main__":
