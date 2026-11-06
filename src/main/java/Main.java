@@ -18,6 +18,7 @@ import command.rpushCommand;
 import command.setCommand;
 import command.typeCommand;
 import command.xaddCommand;
+import command.xrangeCommand;
 import protocol.respParser;
 
 public class Main {
@@ -88,6 +89,9 @@ public class Main {
         }
         else if (commandName.equalsIgnoreCase("XADD")) {
           command = new xaddCommand();
+        }
+        else if (commandName.equalsIgnoreCase("XRANGE")) {
+          command = new xrangeCommand();
         }
         else {
           out.write(("-ERR unknown command\r\n").getBytes());
