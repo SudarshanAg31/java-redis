@@ -435,6 +435,43 @@ def main():
     send(sock, "XADD", "stream3", "*", "e", "f")       # → now-0
     # Expected: "now-0"
             
+    # Setup
+    send(sock, "XADD", "xr_stream", "0-1", "foo", "bar")
+    send(sock, "XADD", "xr_stream", "0-2", "bar", "baz")
+    send(sock, "XADD", "xr_stream", "0-3", "baz", "foo")
+
+    # Full range
+    send(sock, "XRANGE", "xr_stream", "0-1", "0-3")
+    # Expected: [[0-1, [foo, bar]], [0-2, [bar, baz]], [0-3, [baz, foo]]]
+
+    # Partial range
+    send(sock, "XRANGE", "xr_stream", "0-2", "0-3")
+    # Expected: [[0-2, [bar, baz]], [0-3, [baz, foo]]]
+
+    # Exact match
+    send(sock, "XRANGE", "xr_stream", "0-2", "0-2")
+    # Expected: [[0-2, [bar, baz]]]
+
+    # No match
+    send(sock, "XRANGE", "xr_stream", "5-0", "10-0")
+    # Expected: []
+
+    # Partial IDs
+    send(sock, "XRANGE", "xr_stream", "0", "0")
+    # Expected: all 3 entries
+
+    send(sock, "XRANGE", "xr_stream", "0-2", "0")
+    # Expected: entries 0-2 and 0-3
+
+    # Missing stream
+    send(sock, "XRANGE", "nonexistent", "0-0", "0-0")
+    # Expected: []
+
+    # Errors
+    send(sock, "XRANGE", "xr_stream")                  # no start/end
+    send(sock, "XRANGE", "xr_stream", "0-1")           # no end
+    send(sock, "XRANGE", "xr_stream", "abc", "0-1")    # invalid start
+    send(sock, "XRANGE", "xr_stream", "0-1", "abc")    # invalid end
     sock.close()
 
 if __name__ == "__main__":
