@@ -33,6 +33,13 @@ public class xrangeCommand implements command {
      * isStart: true → seq default 0; false → seq default MAX
      */
     private store.StreamId parseRangeId(String s, boolean isStart) {
+        // Special: "-" means minimum ID (0-0)
+        if (s.equals("-")) {
+            return new store.StreamId(0, 0);
+        }
+        if (s.equals("+")) {
+        return new store.StreamId(Long.MAX_VALUE, Long.MAX_VALUE);
+    }
         int dash = s.indexOf('-');
         if (dash == -1) {
             // Only time part
