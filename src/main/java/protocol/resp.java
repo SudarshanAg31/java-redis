@@ -38,4 +38,26 @@ public class resp {
     public static byte[] error(String message) {
         return ("-" + message + "\r\n").getBytes(StandardCharsets.UTF_8);
     }
+    public static byte[] encode(Object value){
+        if(value instanceof String){
+            return bulkString((String)value);
+        }
+        if(value instanceof List){
+            return encodeList((List<?>)value);
+        }
+        if(value instanceof Long|| value instanceof Integer){
+            return integer(((Number)value).longValue());
+        }
+        throw new IllegalArgumentException("Unsupported type: "+ value.getClass());
+    }
+    private static byte [] encodeList(List<?> list){
+        ByteArrayOutputStream out=new ByteArrayOutputStream();
+        // Array header
+        out.writeBytes(("*"+list.size()+"\r\n").getBytes(StandardCharsets.UTF_8));
+        // Elements — recursively encode
+        for(Object item:list){
+            out.writeBytes(encode(item));
+        }
+        return out.toByteArray();
+    }
 }
