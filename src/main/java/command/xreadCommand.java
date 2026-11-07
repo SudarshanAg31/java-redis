@@ -1,5 +1,6 @@
 package command;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import protocol.resp;
@@ -19,22 +20,26 @@ public class xreadCommand implements  command{
             return resp.error("ERR syntax error");
         }
 
-        String key = args.get(1);
-        String idStr = args.get(2);
-
-        // Parse ID — XREAD supports `-` as "minimum" and `+` as "maximum"?
-        // Spec me nahi likha, but common. Let's handle `-` only for now.
-        // Actually spec me only `0-0` example hai, `$` and `>` nahi.
-        // Simple: explicit ID only.
-        
-        store.StreamId startId;
-        try {
-            startId = parseId(idStr);
-        } catch (IllegalArgumentException e) {
-            return resp.error("ERR Invalid stream ID specified as stream command argument");
+        int remaining = args.size() - 1;   // exclude "STREAMS"
+        if (remaining % 2 != 0) {
+            return resp.error("ERR Unbalanced XREAD list of streams: for each stream key an ID or '$' must be specified.");
         }
 
-        List<Object> result = store.xread(key, startId);
+        int n = remaining / 2;   // number of streams
+        List<String> keys = args.subList(1, 1 + n);          // keys at index 1..n
+        List<String> ids  = args.subList(1 + n, args.size()); // ids after keys
+
+        // Parse IDs
+        List<store.StreamId> startAfters = new ArrayList<>();
+        for (String idStr : ids) {
+            try {
+                startAfters.add(parseId(idStr));
+            } catch (IllegalArgumentException e) {
+                return resp.error("ERR Invalid stream ID specified as stream command argument");
+            }
+        }
+
+        List<Object> result = store.xreadMulti(keys, startAfters);
         
         if (result.isEmpty()) {
             return resp.nullArray();   // *-1\r\n
