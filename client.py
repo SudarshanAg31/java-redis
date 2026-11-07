@@ -538,6 +538,46 @@ def main():
     send(sock, "XRANGE", "xr", "0", "+")
     # Expected: all 3 entries (start "0" → (0, 0))
     
+    # Setup
+    send(sock, "XADD", "xr", "0-1", "foo", "bar")
+    send(sock, "XADD", "xr", "0-2", "bar", "baz")
+    send(sock, "XADD", "xr", "0-3", "baz", "foo")
+
+    # From beginning
+    send(sock, "XREAD", "STREAMS", "xr", "0-0")
+    # Expected: [["xr", [["0-1", ...], ["0-2", ...], ["0-3", ...]]]]
+
+    # Exclusive — skip first
+    send(sock, "XREAD", "STREAMS", "xr", "0-1")
+    # Expected: [["xr", [["0-2", ...], ["0-3", ...]]]]
+
+    # Skip two
+    send(sock, "XREAD", "STREAMS", "xr", "0-2")
+    # Expected: [["xr", [["0-3", ...]]]]
+
+    # Skip all
+    send(sock, "XREAD", "STREAMS", "xr", "0-3")
+    # Expected: (nil)  ← null array
+
+    # Way past
+    send(sock, "XREAD", "STREAMS", "xr", "999-0")
+    # Expected: (nil)
+
+    # Missing stream
+    send(sock, "XREAD", "STREAMS", "missing", "0-0")
+    # Expected: (nil)
+
+    # Case-insensitive STREAMS keyword
+    send(sock, "XREAD", "streams", "xr", "0-0")
+    # Expected: works (case-insensitive)
+
+    # Errors
+    send(sock, "XREAD")                         # no args
+    send(sock, "XREAD", "STREAMS")               # missing key/id
+    send(sock, "XREAD", "STREAMS", "xr")         # missing id
+    send(sock, "XREAD", "WRONG", "xr", "0-0")    # wrong keyword
+    send(sock, "XREAD", "STREAMS", "xr", "abc")  # invalid ID
+    
     sock.close()
 
 if __name__ == "__main__":
