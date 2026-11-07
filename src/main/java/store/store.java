@@ -405,4 +405,40 @@ public class store {
             ll.lock.unlock();
         }
     }
+    public static List<Object> xread(String key,StreamId startAfter){
+        ListLock ll=getBlpopLock(key);
+        ll.lock.lock();
+        try {
+            Stream stream=streams.get(key);
+            if(stream==null){
+                return List.of();
+            }
+            List<Object> entries = new ArrayList<>();
+            for (StreamEntry entry : stream.entries) {
+                // EXCLUSIVE: strictly greater
+                if (entry.id.compareTo(startAfter) > 0) {
+                    List<Object> item = new ArrayList<>();
+                    item.add(entry.id.toString());
+                    item.add(entry.fields);
+                    entries.add(item);
+                }
+            }
+            // If no entries, return empty (don't wrap with stream name)
+            if (entries.isEmpty()) {
+                return List.of();
+            }
+            // Wrap: [key, entries]
+            List<Object> streamWrapper = new ArrayList<>();
+            streamWrapper.add(key);
+            streamWrapper.add(entries);
+            
+            // Outer: [streamWrapper]
+            List<Object> result = new ArrayList<>();
+            result.add(streamWrapper);
+            return result;
+        }
+        finally{
+            ll.lock.unlock();
+        }
+    }
 }
