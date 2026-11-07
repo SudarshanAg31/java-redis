@@ -405,40 +405,42 @@ public class store {
             ll.lock.unlock();
         }
     }
-    public static List<Object> xread(String key,StreamId startAfter){
-        ListLock ll=getBlpopLock(key);
-        ll.lock.lock();
-        try {
-            Stream stream=streams.get(key);
-            if(stream==null){
-                return List.of();
-            }
-            List<Object> entries = new ArrayList<>();
-            for (StreamEntry entry : stream.entries) {
-                // EXCLUSIVE: strictly greater
-                if (entry.id.compareTo(startAfter) > 0) {
-                    List<Object> item = new ArrayList<>();
-                    item.add(entry.id.toString());
-                    item.add(entry.fields);
-                    entries.add(item);
+    public static List<Object> xreadMulti(List<String> keys, List<StreamId> startAfters) {
+        List<Object> result = new ArrayList<>();
+        for (int i = 0; i < keys.size(); i++) {
+            String key = keys.get(i);
+            StreamId startAfter = startAfters.get(i);
+            ListLock ll = getBlpopLock(key);
+            ll.lock.lock();
+            try {
+                Stream stream = streams.get(key);
+                if (stream == null) {
+                    continue;   // skip missing stream
                 }
+                
+                List<Object> entries = new ArrayList<>();
+                for (StreamEntry entry : stream.entries) {
+                    if (entry.id.compareTo(startAfter) > 0) {
+                        List<Object> item = new ArrayList<>();
+                        item.add(entry.id.toString());
+                        item.add(entry.fields);
+                        entries.add(item);
+                    }
+                }
+                
+                if (entries.isEmpty()) {
+                    continue;   // skip empty stream
+                }
+                
+                // Wrap: [key, entries]
+                List<Object> streamWrapper = new ArrayList<>();
+                streamWrapper.add(key);
+                streamWrapper.add(entries);
+                result.add(streamWrapper);
+            } finally {
+                ll.lock.unlock();
             }
-            // If no entries, return empty (don't wrap with stream name)
-            if (entries.isEmpty()) {
-                return List.of();
-            }
-            // Wrap: [key, entries]
-            List<Object> streamWrapper = new ArrayList<>();
-            streamWrapper.add(key);
-            streamWrapper.add(entries);
-            
-            // Outer: [streamWrapper]
-            List<Object> result = new ArrayList<>();
-            result.add(streamWrapper);
-            return result;
         }
-        finally{
-            ll.lock.unlock();
-        }
+        return result;   // Outer [stream1, stream2, ...] — empty if none
     }
 }
