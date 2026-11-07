@@ -19,6 +19,7 @@ import command.setCommand;
 import command.typeCommand;
 import command.xaddCommand;
 import command.xrangeCommand;
+import command.xreadCommand;
 import protocol.respParser;
 
 public class Main {
@@ -92,6 +93,9 @@ public class Main {
         }
         else if (commandName.equalsIgnoreCase("XRANGE")) {
           command = new xrangeCommand();
+        }
+         else if (commandName.equalsIgnoreCase("XREAD")) {
+          command = new xreadCommand();
         }
         else {
           out.write(("-ERR unknown command\r\n").getBytes());
